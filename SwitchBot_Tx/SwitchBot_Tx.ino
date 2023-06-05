@@ -59,31 +59,31 @@ class advdCallback: public BLEAdvertisedDeviceCallbacks {
 };
 
 static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
-  Serial.printf("Notify callback for characteristic ");
-  Serial.printf("%s", pBLERemoteCharacteristic->getUUID().toString().c_str());
-  Serial.printf(" of data length %d\n", length);
-  Serial.print("data: ");
-  for (int i = 0; i <= length - 1; i++) {
-    Serial.printf("%02X ", *(pData + i));
-  }
-  Serial.println("");
+  // Serial.printf("Notify callback for characteristic ");
+  // Serial.printf("%s", pBLERemoteCharacteristic->getUUID().toString().c_str());
+  // Serial.printf(" of data length %d\n", length);
+  // Serial.print("data: ");
+  // for (int i = 0; i <= length - 1; i++) {
+  //   Serial.printf("%02X ", *(pData + i));
+  // }
+  // Serial.println("");
 }
 
 // SwitchBot の GATT サーバへ接続 ～ Press コマンド送信
 static bool connectAndSendCommand(BLEAdvertisedDevice t, int times) {
-  dbg("start connectAndSendCommand\n");
+  // dbg("start connectAndSendCommand\n");
   pClient  = BLEDevice::createClient();
 
   pClient->connect(&t);
-  dbg("connected\n");
+  // dbg("connected\n");
 
   // 対象サービスを得る
   BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
   if (pRemoteService == nullptr) {
-    dbg("target service not found\n");
+    // dbg("target service not found\n");
     return false;
   }
-  dbg("found target service\n");
+  // dbg("found target service\n");
 
   // 対象キャラクタリスティックを得る
   pRemoteCharacteristic = pRemoteService->getCharacteristic(notifyUUID);
@@ -91,10 +91,10 @@ static bool connectAndSendCommand(BLEAdvertisedDevice t, int times) {
 
   pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
   if (pRemoteCharacteristic == nullptr) {
-    dbg("target characteristic not found\n");
+    // dbg("target characteristic not found\n");
     return false;
   }
-  dbg("found target characteristic\n");
+  // dbg("found target characteristic\n");
 
   // キャラクタリスティックに Press コマンドを書き込む
   for (int i = 0; i < times; ++i) {
