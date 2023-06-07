@@ -3,22 +3,26 @@ import re
 import time
 import numpy as np
 import sys
-# COM_RX = "/dev/ttyUSB1" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
-# COM_TX = "/dev/ttyUSB0" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
-COM_RX = "COM3" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
-COM_TX = "COM4" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_RX = "/dev/ttyUSB1" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
+COM_TX = "/dev/ttyUSB0" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+# COM_RX = "COM3" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
+# COM_TX = "COM4" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
 
 known_id = {'1' : 0, '22' : 1, '32' : 2, '42' : 3} # todo: 関数で管理。今はif xxx in xxxで代用している -> 辞書式で解決
 VALID_TEXT = "9999"
 RX_TEXT_LENGTH = 5
 bitrate = 115200
 current_temperature = 25
+temperature_bool = 0
+state = 0
 
 def getTargetTemperature(data, t_now):
-    return t_now + data.shape[0] % 5 - 2 
+    # return t_now + data.shape[0] % 5 - 2 
+    global temperature_bool
+    temperature_bool = (temperature_bool + 1) % 3
+    return t_now + (temperature_bool - 1)
 
 def getCommand(t_now, t_target):
-    # 本来ここにはdataを使ったアルゴリズムを使うが、ここでは配列の個数からランダムに温度を設定する
     t = t_target - t_now
     return ('+' if t >= 0 else '-') + f'{abs(t)}'
 
@@ -45,7 +49,7 @@ if __name__ == '__main__':
     try:
         while True:
             start_time = time.time()
-            while time.time() - start_time < 60:
+            while time.time() - start_time < 20:
             # RX_from ser_modelt
                 string_tmp = str(ser_modelt.readline())
                 result = re.findall(r"\d+", string_tmp)
@@ -61,20 +65,25 @@ if __name__ == '__main__':
 
             print("TX start!!!!")
             # TX
-            t_target = getTargetTemperature(save_data, current_temperature)
-            text = getCommand(current_temperature, t_target)
-            print(current_temperature, '->', t_target)
-            current_temperature = t_target
+            if state == 0:
+                t_target = getTargetTemperature(save_data, current_temperature)
+                text = getCommand(current_temperature, t_target)
+                print(current_temperature, '->', t_target)
+                current_temperature = t_target
 
-            if text != '+0':
+
                 print('We should change temperature by ' + text + ' degree')
                 text_bin = text.encode('utf-8')
-                ser_switchbot.write(text_bin)
+            else:
+                print('send +0')
+                text_bin = '+0'.encode('utf-8')
 
+            ser_switchbot.write(text_bin)
             time.sleep(1)
             print(ser_switchbot.read_all().decode('utf-8'))
 
             save_data = np.append(save_data, [[0, 0, 0, 0, 0]], axis=0)
             count += 1
+            state = (state + 1) % 3
     except KeyboardInterrupt:
         np.save('log', save_data)
