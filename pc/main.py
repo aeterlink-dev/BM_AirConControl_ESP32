@@ -3,8 +3,9 @@ import re
 import time
 import numpy as np
 import sys
-COM_RX = "/dev/ttyUSB1" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
-COM_TX = "/dev/ttyUSB0" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_RX = "COM7" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
+COM_TX_PLUS = "COM8" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_TX_MINUS = "COM9" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
 # COM_RX = "COM3" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
 # COM_TX = "COM4" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
 
@@ -37,8 +38,10 @@ if __name__ == '__main__':
     
     ser_modelt = serial.Serial(COM_RX, bitrate, timeout=2)
     print("Serial for Rx-from-model-T found.")
-    ser_switchbot = serial.Serial(COM_TX, bitrate, timeout=2)
-    print("Serial for Tx-to-SwitchBot found.")
+    ser_switchbot_plus = serial.Serial(COM_TX_PLUS, bitrate, timeout=2)
+    print("Serial for TxPlus-to-SwitchBot found.")
+    ser_switchbot_minus = serial.Serial(COM_TX_MINUS, bitrate, timeout=2)
+    print("Serial for TxMinus-to-SwitchBot found.")
 
     save_data = np.array([[0, 0, 0, 0, 0]]) # id1, id2, id3, id4, 制御値
     count = 0
@@ -69,18 +72,27 @@ if __name__ == '__main__':
                 t_target = getTargetTemperature(save_data, current_temperature)
                 text = getCommand(current_temperature, t_target)
                 print(current_temperature, '->', t_target)
-                current_temperature = t_target
 
 
                 print('We should change temperature by ' + text + ' degree')
                 text_bin = text.encode('utf-8')
+
+                if t_target - current_temperature > -0.5:
+                    ser_switchbot_plus.write(text_bin)
+                    time.sleep(1)
+                if t_target - current_temperature < 0.5:
+                    ser_switchbot_minus.write(text_bin)
+                
+                current_temperature = t_target
             else:
                 print('send +0')
-                text_bin = '+0'.encode('utf-8')
+                ser_switchbot_plus.write('+0'.encode('utf-8'))
+                time.sleep(1)
+                ser_switchbot_minus.write('+0'.encode('utf-8'))
 
-            ser_switchbot.write(text_bin)
             time.sleep(1)
-            print(ser_switchbot.read_all().decode('utf-8'))
+            print(ser_switchbot_plus.read_all().decode('utf-8'))
+            print(ser_switchbot_minus.read_all().decode('utf-8'))
 
             save_data = np.append(save_data, [[0, 0, 0, 0, 0]], axis=0)
             count += 1

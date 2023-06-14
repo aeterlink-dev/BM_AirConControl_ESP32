@@ -13,8 +13,6 @@ static BLEUUID notifyUUID("cba20003-224d-11e6-9fb8-0002a5d5c51b");
 // SwitchBot の Press コマンド
 static uint8_t cmdPress[3] = {0x57, 0x01, 0x00};
 
-static BLERemoteCharacteristic* pRemoteCharacteristic;
-static BLEClient*  pClient = NULL;
 static BLEAdvertisedDevice target_plus;
 static BLEAdvertisedDevice target_minus;
 static bool canSendCommand = false;
@@ -79,24 +77,28 @@ static void print_result(int result) {
 
 // SwitchBot の GATT サーバへ接続 ～ Press コマンド送信
 static int connectAndSendCommand(BLEAdvertisedDevice t, int times, int delay_ms) {
+  static BLEClient*  pClient = BLEDevice::createClient();
+  static BLERemoteCharacteristic* pRemoteCharacteristic;
+
   Serial.println("loop start");
-  pClient = BLEDevice::createClient();
-  if (!pClient->connect(&t)) {
-    return REMOTESERVICE_NOT_FOUND;
-  } 
+  if (!pClient->isConnected()) {
+    if (!pClient->connect(&t)) {
+      return REMOTESERVICE_NOT_FOUND;
+    } 
 
-  // 対象サービスを得る
-  BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
-  if (pRemoteService == nullptr) {
-    return REMOTESERVICE_NOT_FOUND;
-  }
-  // 対象キャラクタリスティックを得る
-  pRemoteCharacteristic = pRemoteService->getCharacteristic(notifyUUID);
-  pRemoteCharacteristic->registerForNotify(notifyCallback);
+    // 対象サービスを得る
+    BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
+    if (pRemoteService == nullptr) {
+      return REMOTESERVICE_NOT_FOUND;
+    }
+    // 対象キャラクタリスティックを得る
+    pRemoteCharacteristic = pRemoteService->getCharacteristic(notifyUUID);
+    pRemoteCharacteristic->registerForNotify(notifyCallback);
 
-  pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
-  if (pRemoteCharacteristic == nullptr) {
-    return REMOTECHARACTERISTIC_NOT_FOUND;
+    pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
+    if (pRemoteCharacteristic == nullptr) {
+      return REMOTECHARACTERISTIC_NOT_FOUND;
+    }
   }
   // キャラクタリスティックに Press コマンドを書き込む
   for (int i = 0; i < times; ++i) {
@@ -104,10 +106,10 @@ static int connectAndSendCommand(BLEAdvertisedDevice t, int times, int delay_ms)
     delay(delay_ms);
   }
   // disconnect
-  if (pClient) {
-    pClient->disconnect();
-    pClient = NULL;
-  }
+  // if (pClient) {
+  //   pClient->disconnect();
+  //   pClient = NULL;
+  // }
   return 0;
 }
 
@@ -145,8 +147,8 @@ void loop() {
                     print_result(connectAndSendCommand(key == '+' ? target_plus : target_minus, temp_diff - '0', 3000));
                 }
             } else if (temp_diff == '0') {
-                print_result(connectAndSendCommand(target_plus, 1, 5000));
                 print_result(connectAndSendCommand(target_minus, 1, 5000));
+                // print_result(connectAndSendCommand(target_minus, 1, 5000));
             } else {
                 Serial.printf("temp_diff is too large: %d\n", temp_diff);
             }
