@@ -34,18 +34,18 @@ class advdCallback : public BLEAdvertisedDeviceCallbacks {
     String addr = advertisedDevice.getAddress().toString().c_str();
     Serial.printf("addr=[%s]\n", addr.c_str());
     // SwitchBot を発見
-    if (addr.equalsIgnoreCase(addrSwitchBot_plus)) {
-      Serial.printf("found plus\n");
-      target_plus = advertisedDevice;
-      plus_found = true;
-    }
+    // if (addr.equalsIgnoreCase(addrSwitchBot_plus)) {
+    //   Serial.printf("found plus\n");
+    //   target_plus = advertisedDevice;
+    //   plus_found = true;
+    // }
     if (addr.equalsIgnoreCase(addrSwitchBot_minus)) {
       Serial.printf("found minus\n");
       minus_found = true;
       target_minus = advertisedDevice;
     }
 
-    if (plus_found && minus_found) {
+    if (plus_found || minus_found) {
       advertisedDevice.getScan()->stop();
       canSendCommand = true;
     }
@@ -54,13 +54,15 @@ class advdCallback : public BLEAdvertisedDeviceCallbacks {
 
 static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
   Serial.printf("Notify callback for characteristic ");
-  // Serial.printf("%s", pBLERemoteCharacteristic->getUUID().toString().c_str());
-  // Serial.printf(" of data length %d\n", length);
-  // Serial.print("data: ");
-  // for (int i = 0; i <= length - 1; i++) {
-  //   Serial.printf("%02X ", *(pData + i));
-  // }
-  // Serial.println("");
+  /*
+  Serial.printf("%s", pBLERemoteCharacteristic->getUUID().toString().c_str());
+  Serial.printf(" of data length %d\n", length);
+  Serial.print("data: ");
+  for (int i = 0; i <= length - 1; i++) {
+    Serial.printf("%02X ", *(pData + i));
+  }
+  Serial.println("");
+  */
 }
 
 static void print_result(int result) {
@@ -105,11 +107,12 @@ static int connectAndSendCommand(BLEAdvertisedDevice t, int times, int delay_ms)
     pRemoteCharacteristic->writeValue(cmdPress, sizeof(cmdPress), false);
     delay(delay_ms);
   }
-  // disconnect
+  /* disconnect
   // if (pClient) {
   //   pClient->disconnect();
   //   pClient = NULL;
-  // }
+  }
+  */
   return 0;
 }
 
@@ -147,8 +150,8 @@ void loop() {
                     print_result(connectAndSendCommand(key == '+' ? target_plus : target_minus, temp_diff - '0', 3000));
                 }
             } else if (temp_diff == '0') {
+                // print_result(connectAndSendCommand(target_plus, 1, 5000));
                 print_result(connectAndSendCommand(target_minus, 1, 5000));
-                // print_result(connectAndSendCommand(target_minus, 1, 5000));
             } else {
                 Serial.printf("temp_diff is too large: %d\n", temp_diff);
             }

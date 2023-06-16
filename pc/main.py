@@ -3,9 +3,9 @@ import re
 import time
 import numpy as np
 import sys
-COM_RX = "COM7" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
-COM_TX_PLUS = "COM8" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
-COM_TX_MINUS = "COM9" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_RX = "/dev/ttyUSB0" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
+COM_TX_PLUS = "/dev/ttyUSB1" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_TX_MINUS = "/dev/ttyUSB2" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
 # COM_RX = "COM3" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
 # COM_TX = "COM4" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
 
