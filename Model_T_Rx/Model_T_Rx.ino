@@ -27,7 +27,7 @@ class advertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
         rx_buff = advertisedDevice.getManufacturerData();
 
         if (rx_buff.length() == 19 && rx_buff[0] == 0x0C && rx_buff[1] == 0x0F && rx_buff[2] == 0x01) { // この長さはTxで送るバイトとは異なる
-            int n = (rx_buff[4] << 8) | rx_buff[3]; // 65536のAPBMを管理できない
+            int n = (rx_buff[3] << 8) | rx_buff[4]; // 65536のAPBMを管理できない
             // if (n >= BEACON_MAX_NUM) {
             //     out_of_range = n;
             //     return;
