@@ -3,13 +3,11 @@ import re
 import time
 import numpy as np
 import sys
-COM_RX = "/dev/ttyUSB0" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
-COM_TX_PLUS = "/dev/ttyUSB1" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
-COM_TX_MINUS = "/dev/ttyUSB2" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
-# COM_RX = "COM3" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
-# COM_TX = "COM4" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_RX = "COM8" # Model-T -> ESP32 -> PC のCOM。本当にRx_only
+COM_TX_PLUS = "COM5" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
+COM_TX_MINUS = "COM9" # PC -> ESP32 -> SwitchBot のCOM。本当はTxもRxもある
 
-known_id = {'1' : 0, '22' : 1, '32' : 2, '42' : 3} # todo: 関数で管理。今はif xxx in xxxで代用している -> 辞書式で解決
+known_id = {'2354' : 0, '2364' : 1, '2377' : 2, '2378' : 3} # todo: 関数で管理。今はif xxx in xxxで代用している -> 辞書式で解決
 VALID_TEXT = "9999"
 RX_TEXT_LENGTH = 5
 bitrate = 115200
@@ -46,14 +44,11 @@ if __name__ == '__main__':
     save_data = np.array([[0, 0, 0, 0, 0]]) # id1, id2, id3, id4, 制御値
     count = 0
 
-    # 温度の差
-    # logを終わらせる
-    # list
     try:
         while True:
             start_time = time.time()
             while time.time() - start_time < 20:
-            # RX_from ser_modelt
+            # RX from "ser_modelt"
                 string_tmp = str(ser_modelt.readline())
                 result = re.findall(r"\d+", string_tmp)
                 if ((len(result) >= RX_TEXT_LENGTH) and result[0] == VALID_TEXT):
@@ -66,15 +61,12 @@ if __name__ == '__main__':
                     save_data[count, known_id[sensor_id]] = sensor_data
                     print('.', end='', flush=True)
 
-            print("TX start!!!!")
-            # TX
             if state == 0:
+                # TX
+                print(save_data)
                 t_target = getTargetTemperature(save_data, current_temperature)
                 text = getCommand(current_temperature, t_target)
-                print(current_temperature, '->', t_target)
-
-
-                print('We should change temperature by ' + text + ' degree')
+                print('We should change temperature by ' + text + ' degree : ', current_temperature, '->', t_target)
                 text_bin = text.encode('utf-8')
 
                 if t_target - current_temperature > -0.5:
@@ -84,18 +76,19 @@ if __name__ == '__main__':
                     ser_switchbot_minus.write(text_bin)
                 
                 current_temperature = t_target
+                save_data = np.append(save_data, [[0, 0, 0, 0, 0]], axis=0)
+                count += 1
             else:
+                # 空うちをTX
                 print('send +0')
                 ser_switchbot_plus.write('+0'.encode('utf-8'))
                 time.sleep(1)
                 ser_switchbot_minus.write('+0'.encode('utf-8'))
+                time.sleep(1)
 
-            time.sleep(1)
             print(ser_switchbot_plus.read_all().decode('utf-8'))
             print(ser_switchbot_minus.read_all().decode('utf-8'))
 
-            save_data = np.append(save_data, [[0, 0, 0, 0, 0]], axis=0)
-            count += 1
             state = (state + 1) % 3
     except KeyboardInterrupt:
         np.save('log', save_data)
