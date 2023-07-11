@@ -5,8 +5,8 @@
 #define DEVICE_NAME "APBM05"         // デバイス名
 #define SPI_SPEED   115200          // SPI通信速度
 constexpr int serial_no = 1;
-constexpr char serial_no_0_to_7 = serial_no & 0xFF;
-constexpr char serial_no_8_to_15 = (serial_no >> 8) & 0xFF;
+constexpr char serial_no_0_to_7 = (serial_no >> 8) & 0xFF;
+constexpr char serial_no_8_to_15 = serial_no & 0xFF;
 
 RTC_DATA_ATTR static uint16_t seq_number = 1;    // RTCメモリー上のシーケンス番号
 
@@ -167,7 +167,7 @@ void setup() {
         pAdvertising->stop();
         if (seq_number == 0xFFFF) seq_number = 1;
         else seq_number++;
-        esp_sleep_enable_timer_wakeup((1000 - (millis() - start_time)) * 1000);
+        esp_sleep_enable_timer_wakeup((2500 - (millis() - start_time)) * 1000);
         esp_light_sleep_start();
     }
 };
